@@ -1,0 +1,8 @@
+.status-text {
+    color: var(--color-status-green);
+}
+
+.order-card-img {
+    width: 150px;
+    /* flex: 0 0; */
+}

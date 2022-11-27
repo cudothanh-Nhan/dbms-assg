@@ -1,0 +1,76 @@
+.park-card {
+  /* Add shadows to create the "card" effect */
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  background-color: #ffffff;
+  transition: 0.5s;
+  width: 98% !important;
+  /* height: 186px !important; */
+  margin: 5px;
+  font-family: arial;
+  border-radius: 12px;
+  padding: 5px;
+}
+
+/* On mouse-over, add a deeper shadow */
+.park-card:hover {
+  cursor: pointer;
+  transform: scale(1.04);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), 0 4px 8px rgb(0 0 0 / 6%);
+}
+
+.img {
+  max-width: 200px;
+  height: 160px;
+  width: 100%;
+  float: left;
+  margin: 5px;
+  margin-right: 10px;
+  border-radius: 5%;
+  border: 2px solid #211931;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.clearfix::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+.title {
+  font-weight: bold;
+  color: #211931;
+  text-align: left;
+  margin-left: 15px;
+  margin-top: 6px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5em;
+  height: 1.5em;
+  white-space: nowrap;
+}
+
+.order {
+  color: green;
+  font-size: 16px;
+  text-align: left;
+  margin-left: 15px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5em;
+  height: 1.5em;
+  white-space: nowrap;
+}
+
+.address {
+  color: #000;
+  font-size: 16px;
+  text-align: left;
+  margin-left: 15px;
+
+  line-height: 1.5em;
+  height: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

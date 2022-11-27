@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = "/parkings")
@@ -17,7 +19,7 @@ public class ParkingController {
   ParkingService parkingService;
 
   @GetMapping("")
-  public List<ParkingEntity> getParkingByCity(@RequestParam String cityId) {
+  public List<Map<String, Object>> getParkingByCity(@RequestParam String cityId) {
     return parkingService.getParkingByCity(cityId);
   }
 
@@ -25,4 +27,21 @@ public class ParkingController {
   public List<Feedback> getFeedback(@RequestParam String parkingId) {
     return parkingService.getParkingFeedback(parkingId);
   }
+
+  @GetMapping("summary")
+  public List<Map<String, Object>> summaryProvince() {
+    return parkingService.summaryProvince();
+  }
+
+  @GetMapping("popular")
+  public List<Map<String, Object>> getPopularParking() {
+    return parkingService.getPopularParking();
+  }
+
+  @GetMapping("parking-searching")
+  public Map<String, Object> getParkingById(@RequestParam String id) {
+    return parkingService.getParkingById(id);
+  }
+
+
 }
