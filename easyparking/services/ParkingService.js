@@ -1,5 +1,4 @@
-const ParkingModel = require("../models/ParkingModel");
-const { ParkingSchema } = require("../models/ParkingModel");
+const ParkingModel = require('../models/ParkingModel');
 
 module.exports = {
   getAllParkings: async () => {
@@ -8,25 +7,26 @@ module.exports = {
   },
   getParking: async (parkingId) => {
     console.log(parkingId);
-    const parking = await ParkingModel.findOne(parkingId);
-    console.log(parking);
+    const parking = await ParkingModel.getParkingById(parkingId);
     return parking;
   },
   insertOneParking: async (parking) => {
-    // const newParking = {
-    //   name: parking.name,
-    //   street: parking.street,
-    //   ward: parking.ward,
-    //   district: parking.district,
-    //   province: parking.province,
-    //   img: parking.img,
-    //   price: parking.price,
-    //   userName: parking.userName,
-    // };
     return await ParkingModel.insertOne(parking);
   },
   getAllParkingBy: async (username) => {
     let data = await ParkingModel.find(username);
+    return data;
+  },
+  summaryProvince: async () => {
+    return await ParkingModel.summaryProvince();
+  },
+  getParkingByCity: async (cityId) => {
+    let data = await ParkingModel.getParkingByCity(cityId);
+    return data;
+  },
+
+  getPopularParking: async () => {
+    let data = await ParkingModel.getPopularParking();
     return data;
   },
 };

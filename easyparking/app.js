@@ -13,13 +13,13 @@ app.use(cors());
 
 app.use('/order', orderRouter);
 app.use('/user', userRouter);
-app.use('/parking', parkingRouter);
+app.use('/parkings', parkingRouter);
 app.use('/payment', paymentRouter);
 
 app.use(express.static(path.join(__dirname, 'build')));
 
 app.get('/*', function (req, res) {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  // res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 app.listen(port, () => {

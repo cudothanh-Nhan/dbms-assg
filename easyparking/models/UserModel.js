@@ -1,33 +1,71 @@
-const mongoose = require("mongoose");
+const { v4: uuidv4 } = require('uuid');
+const conn = require('../Conn');
+const USER_CACHE_NAME = 'User';
+const IgniteClient = require('apache-ignite-client');
 
-const UserSchema = new mongoose.Schema({
-  userName: {
-    type: String,
-    unique: true,
-    require: true
-  },
+const SqlFieldsQuery = IgniteClient.SqlFieldsQuery;
+const CacheConfiguration = IgniteClient.CacheConfiguration;
+const userCache = conn.getCache(
+  USER_CACHE_NAME,
+  new CacheConfiguration().setSqlSchema('EasyParking')
+);
 
-  password: {
-    type: String,
-    required: true
-  },
+exports.getUserByUsername = async function (userName) {
+  const query = new SqlFieldsQuery(
+    `SELECT * FROM User WHERE username = '${userName}'`
+  );
+  const cursor = await userCache.query(query);
+  console.log(cursor);
+  const result = [];
+  do {
+    let row = await cursor.getValue();
+    result.push({
+      id: row[0],
+      username: row[1],
+      password: row[2],
+      displayName: row[3],
+      email: row[4],
+      phone: row[5],
+    });
+  } while (cursor.hasMore());
+  return result;
+};
 
-  displayName: {
-    type: String,
-    required: true
-  },
+exports.insertOne = async function (user) {
+  const id = uuidv4();
+  console.log(user);
+  const initUser = {
+    username: '',
+    displayname: '',
+    email: '',
+    password: '',
+    phone: '',
+  };
 
-  email: {
-    type: String,
-    required: true
-  },
+  if (user.userName) {
+    initUser.username = user.userName;
+  }
 
-  phone: {
-    type: String,
-    required: true
-  },
-});
+  if (user.displayname) {
+    initUser.displayname = user.displayname;
+  }
 
-const UserModel = mongoose.model("User", UserSchema);
+  if (user.email) {
+    initUser.email = user.email;
+  }
 
-module.exports = UserModel;
+  if (user.password) {
+    initUser.password = user.password;
+  }
+
+  if (user.phone) {
+    initUser.phone = user.phone;
+  }
+console.log(initUser)
+  const userQuery =
+    new SqlFieldsQuery(`INSERT INTO user(ID, username, displayname, email, password, phone)
+  VALUES ('${id}','${initUser.username}', '${initUser.displayname}', '${initUser.email}', '${initUser.password}',
+  '${initUser.phone}')`);
+  const cursor = await userCache.query(userQuery).catch((e) => console.log(e));
+  console.log('Data are inserted');
+};

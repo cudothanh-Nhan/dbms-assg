@@ -44,12 +44,14 @@ exports.findOne = async function (id) {
     console.log(row);
     result.push({
       id: row[0],
-      name: row[1],
-      street: row[2],
-      ward: row[3],
-      district: row[4],
-      province: row[5],
-      description: row[6],
+      times: row[1],
+      customers: row[2],
+      paymentMethod: row[3],
+      startTime: row[4],
+      endTime: row[5],
+      price: row[6],
+      parkingId: row[6],
+      username: row[6],
     });
   } while (cursor.hasMore());
   return result[0];
@@ -127,6 +129,6 @@ exports.insertOne = async function (order) {
   const cursor = await orderCache
     .query(orderQuery)
     .catch((e) => console.log(e));
-  console.log(cursor, 123);
+  console.log(cursor);
   console.log('Data are inserted');
 };

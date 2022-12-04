@@ -7,7 +7,7 @@ const VEHICLE_NAMES = ['Xe máy', 'Xe ô tô 4-7 chỗ', 'Xe 16 chỗ', 'Xe 32 c
 async function formatOrder(order) {
   order = order.toObject();
 
-  const parking = await ParkingModel.findOne({ _id: order.parkingId });
+  const parking = await ParkingModel.findOne(order.parkingId);
   order.parking = {};
   order.parking.name = parking.name;
   order.parking.address = [
@@ -16,7 +16,7 @@ async function formatOrder(order) {
     parking.district,
     parking.province,
   ].join(', ');
-  order.parking.image = parking.img[0];
+  order.parking.image = parking.img;
   order.vehicles = VEHICLE_NAMES.map((item, idx) => {
     var vehicle = {};
     vehicle.name = item;
@@ -46,7 +46,7 @@ module.exports = {
     let parks = await ParkingService.getAllParkingBy(userName);
     let orders = [];
     for (let park of parks) {
-      let orderOfPark = await OrderModel.find({ parkingId: park?._id });
+      let orderOfPark = await OrderModel.find(park?._id);
       orders.push(orderOfPark);
     }
 
@@ -69,7 +69,7 @@ module.exports = {
     const parking = await ParkingModel.findOne(order.parkingId);
     if (Object.keys(parking).length !== 0) {
       order.price = parking.price;
-    //   const orderModel = new OrderModel(order);
+      //   const orderModel = new OrderModel(order);
       const newOrder = await OrderModel.insertOne(order);
       return newOrder;
     } else {
@@ -78,13 +78,13 @@ module.exports = {
   },
 
   getOrder: async (orderId) => {
-    var order = await OrderModel.findOne({ _id: orderId });
+    var order = await OrderModel.findOne(orderId);
 
     return await formatOrder(order);
   },
 
   getOrderHistory: async (userName) => {
-    var orders = await OrderModel.find({ userName: userName });
+    var orders = await OrderModel.find(userName);
     var formatedOrders = [];
     for (let i = 0; i < orders.length; i++) {
       try {

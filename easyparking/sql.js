@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-const Util = require('util');
 const IgniteClient = require('apache-ignite-client');
 const ObjectType = IgniteClient.ObjectType;
 const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
@@ -23,10 +22,19 @@ const CacheConfiguration = IgniteClient.CacheConfiguration;
 const SqlFieldsQuery = IgniteClient.SqlFieldsQuery;
 const SqlQuery = IgniteClient.SqlQuery;
 
-const PARKING_CACHE_NAME = 'Parking';
-const ORDER_CACHE_NAME = 'ParkingOrder';
-const USER_CACHE_NAME = 'User';
 const CACHE_NAME = 'EasyParking';
+
+const CITY_CACHE_NAME = 'CITY';
+const DISTRICT_CACHE_NAME = 'DISTRICT';
+const FEEDBACK_CACHE_NAME = 'FEEDBACK';
+const ORDER_STATUS_CACHE_NAME = 'ORDER_STATUS';
+const ORDER_VEHICLE_CACHE_NAME = 'ORDER_VEHICLE';
+const PARKING_CACHE_NAME = 'PARKING';
+const PERSON_CACHE_NAME = 'PERSON';
+const PARK_IMAGE_CACHE_NAME = 'PARK_IMAGE';
+const P_ORDER_CACHE_NAME = 'P_ORDER';
+const U_PARKING_CACHE_NAME = 'U_PARKING';
+const VEHICLE_TYPE_CACHE_NAME = 'VEHICLE_TYPE';
 
 // This example shows primary APIs to use with Ignite as with an SQL database:
 // - connects to a node
@@ -37,17 +45,17 @@ const CACHE_NAME = 'EasyParking';
 // - reads data from the tables (SELECT ...)
 // - deletes tables (DROP TABLE)
 // - destroys the cache
+
 class SqlExample {
   async start() {
     const igniteClient = new IgniteClient();
     try {
       const igniteClientConfiguration = new IgniteClientConfiguration(
-        '53e22b07-8ae5-4b42-aefd-090d769ae8a2.gridgain-nebula.com:10800'
+        'e20ae279-d590-4d02-9357-46f7cadb7fc4.gridgain-nebula.com:10800'
       )
-        .setUserName('bang')
-        .setPassword('tYLOyZVk50Kid0S')
+        .setUserName('easyparking')
+        .setPassword('zNUaRx6rhUJcpEz')
         .setConnectionOptions(true);
-
       await igniteClient.connect(igniteClientConfiguration);
 
       const cache = await igniteClient.getOrCreateCache(
@@ -56,20 +64,7 @@ class SqlExample {
       );
 
       await this.deleteDatabaseObjects(cache);
-
       await this.createDatabaseObjects(cache);
-      // await this.insertData(cache);
-
-      const parkingCache = igniteClient.getCache(PARKING_CACHE_NAME);
-      const orderCache = igniteClient.getCache(ORDER_CACHE_NAME);
-      const userCache = igniteClient.getCache(USER_CACHE_NAME);
-
-      // await this.getMostPopulatedCities(countryCache);
-      // await this.getTopCitiesInThreeCountries(cityCache);
-      // await this.getCityDetails(cityCache, 5);
-
-      // await this.deleteDatabaseObjects(cache);
-      // await igniteClient.destroyCache(DUMMY_CACHE_NAME);
     } catch (err) {
       console.log('ERROR: ' + err);
     } finally {
@@ -77,71 +72,153 @@ class SqlExample {
     }
   }
 
-  // async getConnection() {
-  //     const igniteClient = new IgniteClient();
-  //     await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800', '127.0.0.1:10801', '127.0.0.1:10802'));
-  //     return igniteClient
-  // }
-
   async createDatabaseObjects(cache) {
-    const createParkingTable = `CREATE TABLE Parking (
-            ID CHAR(50) PRIMARY KEY,
-            Name CHAR(52),
-            Street CHAR(50),
-            Ward CHAR(50),
-            District CHAR(50),
-            Province CHAR(50),
-            Description CHAR(50),
-            Img CHAR(50),
-            Price CHAR(50),
-            Username CHAR(50),
-        ) WITH "template=partitioned, backups=1, CACHE_NAME=${PARKING_CACHE_NAME}"`;
+    const createCityTable = `CREATE TABLE CITY (
+        ID VARCHAR(40),
+        NAME VARCHAR(100),
+        PRIMARY KEY (ID),
+    ) WITH "template=partitioned, backups=1, CACHE_NAME=${CITY_CACHE_NAME}"`;
 
-    const createUserTable = `CREATE TABLE User (
-            ID CHAR(50) PRIMARY KEY,
-            Username CHAR(50),
-            DisplayNAme CHAR(50),
-            Email CHAR(50),
-            Phone CHAR(20),
-        ) WITH "template=partitioned, backups=1, CACHE_NAME=${USER_CACHE_NAME}"`;
+    const createDistrictTable = `CREATE TABLE DISTRICT (
+        ID VARCHAR(20),
+        NAME VARCHAR(20),
+        CITY VARCHAR(20),
+        PRIMARY KEY (ID, city),
+    ) WITH "template=partitioned, backups=1, affinity_key=city, CACHE_NAME=${DISTRICT_CACHE_NAME}"`;
 
-    const createOrderTable = `CREATE TABLE ParkingOrder (
-            ID CHAR(50) PRIMARY KEY,
-            Times DATE,
-            Customer CHAR(30),
-            PaymentMethod CHAR(30),
-            StartTime DATE,
-            EndTime DATE,
-            Price CHAR(50),
-            ParkingId CHAR(50),
-            Username CHAR(50),
-        ) WITH "template=partitioned, backups=1, CACHE_NAME=${ORDER_CACHE_NAME}"`;
+    const createFeedbackTable = `CREATE TABLE FEEDBACK (
+        ID VARCHAR(20),
+        USERID VARCHAR(20),
+        PARKING VARCHAR(60),
+        TEXT VARCHAR(1024),
+        TIME TIMESTAMP(6),
+        RATE DOUBLE,
+        PRIMARY KEY (ID,PARKING),
+    ) WITH "template=partitioned, backups=1, affinity_key=PARKING, CACHE_NAME=${FEEDBACK_CACHE_NAME}"`;
 
-    // create tables
+    const createOrderStatusTable = `CREATE TABLE ORDER_STATUS (
+        ORDER_ID VARCHAR(20),
+        STATUS INT,
+        TIME TIMESTAMP(6),
+        PRIMARY KEY (ORDER_ID, STATUS),
+    ) WITH "template=partitioned, backups=1, affinity_key=order_id, CACHE_NAME=${ORDER_STATUS_CACHE_NAME}"`;
+
+    const createOrderVehicleTable = `CREATE TABLE ORDER_VEHICLE (
+        ORDER_ID VARCHAR(20),
+        VEHICLE VARCHAR(20),
+        QUANTITY INT,
+        PRIMARY KEY (ORDER_ID, VEHICLE),
+    ) WITH "template=partitioned, backups=1, affinity_key=order_id, CACHE_NAME=${ORDER_VEHICLE_CACHE_NAME}"`;
+
+    const createParkingTable = `CREATE TABLE PARKING (
+        ID VARCHAR(60),
+        NAME VARCHAR(100),
+        CITY VARCHAR(20),
+        ADDRESS VARCHAR(100),
+        DESCRIPTION VARCHAR(1024),
+        DISTRICT VARCHAR(20),
+        PRIMARY KEY (ID,CITY),
+    ) WITH "template=partitioned, backups=1, affinity_key=CITY, CACHE_NAME=${PARKING_CACHE_NAME}"`;
+
+    const createParkImageTable = `CREATE TABLE PARK_IMAGE (
+        PARKING VARCHAR(20),
+        URL VARCHAR(1024),
+        IDX DECIMAL,
+        PRIMARY KEY (PARKING, IDX),
+    ) WITH "template=partitioned, backups=1, affinity_key=parking, CACHE_NAME=${PARK_IMAGE_CACHE_NAME}"`;
+
+    const createPersonTable = `CREATE TABLE PERSON (
+        ID VARCHAR(20),
+        NAME VARCHAR(40),
+        PRIMARY KEY (ID),
+    ) WITH "template=partitioned, backups=1, CACHE_NAME=${PERSON_CACHE_NAME}"`;
+
+    const createPOrderTable = `CREATE TABLE P_ORDER (
+        NANE VARCHAR(254),
+        EMAIL VARCHAR(254),
+        PHONE VARCHAR(20),
+        PARKING VARCHAR(20),
+        START_TIME TIMESTAMP(6),
+        END_TIME TIMESTAMP(6),
+        CUSTOMER VARCHAR(20),
+        ID VARCHAR(20),
+        PRIMARY KEY (ID, customer),
+    ) WITH "template=partitioned, backups=1, affinity_key=customer, CACHE_NAME=${P_ORDER_CACHE_NAME}"`;
+
+    const createUParkingTable = `CREATE TABLE U_PARKING (
+        ID VARCHAR(20),
+        USERID VARCHAR(20),
+        PARKING VARCHAR(20),
+        PRIMARY KEY (PARKING, USERID),
+    ) WITH "template=partitioned, backups=1, affinity_key=userid, CACHE_NAME=${U_PARKING_CACHE_NAME}"`;
+
+    const createVehicleTypeTable = `CREATE TABLE VEHICLE_TYPE (
+        PARKING VARCHAR(254),
+        TYPE VARCHAR(254),
+        CAPACITY INT,
+        PRICE DOUBLE,
+        AVAILABLE INT,
+        PRIMARY KEY (PARKING, TYPE),
+    ) WITH "template=partitioned, backups=1, affinity_key=PARKING, CACHE_NAME=${VEHICLE_TYPE_CACHE_NAME}"`;
+
+    (await cache.query(new SqlFieldsQuery(createCityTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createDistrictTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createFeedbackTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createOrderStatusTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createOrderVehicleTable))).getAll();
     (await cache.query(new SqlFieldsQuery(createParkingTable))).getAll();
-    (await cache.query(new SqlFieldsQuery(createUserTable))).getAll();
-    (await cache.query(new SqlFieldsQuery(createOrderTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createParkImageTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createPersonTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createPOrderTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createUParkingTable))).getAll();
+    (await cache.query(new SqlFieldsQuery(createVehicleTypeTable))).getAll();
 
     console.log('Database objects created');
   }
 
   async deleteDatabaseObjects(cache) {
     (
-      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS Parking'))
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS CITY'))
     ).getAll();
     (
-      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS User'))
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS DISTRICT'))
     ).getAll();
     (
-      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS ParkingOrder'))
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS FEEDBACK'))
+    ).getAll();
+    (
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS ORDER_STATUS'))
+    ).getAll();
+    (
+      await cache.query(
+        new SqlFieldsQuery('DROP TABLE IF EXISTS ORDER_VEHICLE')
+      )
+    ).getAll();
+    (
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS PARKING'))
+    ).getAll();
+    (
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS PERSON'))
+    ).getAll();
+    (
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS PARK_IMAGE'))
+    ).getAll();
+    (
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS P_ORDER'))
+    ).getAll();
+    (
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS U_PARKING'))
+    ).getAll();
+    (
+      await cache.query(new SqlFieldsQuery('DROP TABLE IF EXISTS VEHICLE_TYPE'))
     ).getAll();
     console.log('Database objects dropped');
   }
 
   onStateChanged(state, reason) {
-    if (state === IgniteClient.STATE.CONNECTED) {
+    if (state === IgniteClient.STATE.CONNECTED)
       console.log('Client is started');
-    } else if (state === IgniteClient.STATE.DISCONNECTED) {
+    else if (state === IgniteClient.STATE.DISCONNECTED) {
       console.log('Client is stopped');
       if (reason) {
         console.log(reason);
