@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -17,6 +19,24 @@ public class OrderService {
 
   @Autowired
   private ParkingService parkingService;
+
+  @Transactional(isolation = Isolation.READ_COMMITTED)
+  public void addOrder(Map<String, Object> body) {
+    body.put("id", UUID.randomUUID().toString());
+    final String sql = "INSERT INTO P_ORDER (name, email, phone, parking, start_time, end_time, customer, id) \n" +
+        "VALUES (:name , :email, :phone, :parking, TO_DATE((:startTime), 'yyyy-mm-dd hh24:mi:ss'), TO_DATE((:endTime), 'yyyy-mm-dd hh24:mi:ss'), :customer, :id)";
+    jdbcTemplate.update(sql, body);
+
+    final String vehicleSql = "INSERT INTO ORDER_VEHICLE (order_id, vehicle, quantity) VALUES(:id, :vehicle, :quantity)";
+    Map<String, Object> vehicles = (Map) body.get("type");
+    for (Map.Entry<String, Object> v : vehicles.entrySet()) {
+      Map<String, Object> m = new HashMap<>();
+      m.put("id", body.get("id"));
+      m.put("vehicle", v.getKey());
+      m.put("quantity", v.getValue());
+      jdbcTemplate.update(vehicleSql, m);
+    }
+  }
 
   public Map<String, Object> getOrderDetail(String id) {
     final String sql = "SELECT *\n" +
@@ -57,7 +77,7 @@ public class OrderService {
     final String vehicleSql = "SELECT *\n" +
         "FROM order_vehicle ov\n" +
         "INNER JOIN p_order po ON ov.order_id = po.id\n" +
-        "INNER JOIN vehicle_type v ON v.parking = po.parking\n" +
+        "INNER JOIN vehicle_type v ON v.parking = po.parking and ov.vehicle = v.type\n" +
         "WHERE ov.order_id = (:id)";
     AtomicReference<String> parkingId = new AtomicReference<>();
     map.put("vehicles", jdbcTemplate.query(vehicleSql, parameters, (rs, rowNum) -> {
@@ -118,5 +138,67 @@ public class OrderService {
       lst.add(e.getValue());
       return lst;
     }).collect(Collectors.toList());
+  }
+
+  @Transactional(isolation = Isolation.READ_COMMITTED)
+  public void updateNextState(String orderId) {
+    MapSqlParameterSource parameters = new MapSqlParameterSource();
+    parameters.addValue("id", orderId);
+    final String sql = "SELECT MAX(os.status) as m\n" +
+        "FROM order_status os\n" +
+        "WHERE os.order_id = (:id)";
+
+    int curStatus = jdbcTemplate.query(sql, parameters, (rs, rowNum) -> {
+      return rs.getInt("m");
+    }).get(0);
+
+    Map<String, Object> order = this.getOrderDetail(orderId);
+    List<Map<String, Object>> vehicles = (List) order.get("vehicles");
+    Map<String, Object> parking = (Map) order.get("parking");
+
+    if (curStatus == 0) {
+      for (Map<String, Object> v : vehicles) {
+        final String minusAvailableSql = "UPDATE vehicle_type\n" +
+            "SET available = available - (:quantity)\n" +
+            "WHERE available - (:quantity) >= 0 and parking = (:parking) and type = (:type)";
+        MapSqlParameterSource updateParams = new MapSqlParameterSource();
+        updateParams.addValue("quantity", (Integer) v.get("quantity"));
+        updateParams.addValue("parking", parking.get("id"));
+        updateParams.addValue("type", v.get("name"));
+
+        int n = jdbcTemplate.update(minusAvailableSql,updateParams);
+        if (n == 0) {
+          throw new RuntimeException();
+        }
+      }
+    } else if (curStatus == 4) {
+      return;
+    }
+
+    final String insertNewState = "\n" +
+        "INSERT INTO ORDER_STATUS\n" +
+        "VALUES((:id), (:nextState), CURRENT_TIMESTAMP)";
+    MapSqlParameterSource insertParams = new MapSqlParameterSource();
+    insertParams.addValue("id", orderId);
+    insertParams.addValue("nextState", curStatus + 1);
+    jdbcTemplate.update(insertNewState, insertParams);
+
+
+    if (curStatus == 2) {
+      for (Map<String, Object> v : vehicles) {
+        final String plusAvailableSql = "UPDATE vehicle_type\n" +
+            "SET available = available + (:quantity)\n" +
+            "WHERE parking = (:parking) and type = (:type)";
+        MapSqlParameterSource updateParams = new MapSqlParameterSource();
+        updateParams.addValue("quantity", (Integer) v.get("quantity"));
+        updateParams.addValue("parking", parking.get("id"));
+        updateParams.addValue("type", v.get("name"));
+
+        int n = jdbcTemplate.update(plusAvailableSql,updateParams);
+        if (n == 0) {
+          throw new RuntimeException();
+        }
+      }
+    }
   }
 }

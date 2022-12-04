@@ -151,7 +151,7 @@ public class ParkingService {
       Map<String, Object> map = new HashMap<>();
       map.put("name", rs.getString("type"));
       map.put("capacity", rs.getInt("capacity"));
-      map.put("available", rs.getInt("capacity"));
+      map.put("available", rs.getInt("available"));
       map.put("price", rs.getInt("price"));
       return map;
     });

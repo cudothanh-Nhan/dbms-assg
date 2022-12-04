@@ -1,9 +1,7 @@
 package com.example.easyparking.controllers;
 
 
-import com.example.easyparking.entites.Feedback;
 import com.example.easyparking.services.OrderService;
-import com.example.easyparking.services.ParkingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +27,20 @@ public class OrderController {
   @GetMapping("/order-management/{userName}")
   public List<List<Object>> getManagedOrder(@PathVariable("userName") String userName) {
     return orderService.getManagedOrder(userName);
+  }
+
+  @PostMapping("/change-state/{orderId}")
+  public void updateState(@PathVariable("orderId") String orderId, @RequestBody Map<String, String> body) {
+    if ("update".equals(body.get("cmd"))) {
+      orderService.updateNextState(orderId);
+    } else if ("cancel".equals(body.get("cmd"))) {
+      return;
+    }
+  }
+
+  @PostMapping("/add-order")
+  public void addOrder(@RequestBody Map<String, Object> body) {
+    orderService.addOrder(body);
   }
 
 
