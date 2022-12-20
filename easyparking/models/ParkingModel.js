@@ -1,17 +1,11 @@
 const { v4: uuidv4 } = require('uuid');
 const conn = require('../Conn');
-const PARKING_CACHE_NAME = 'PARKING';
 const IgniteClient = require('apache-ignite-client');
-const { map } = require('../app');
 
 const SqlFieldsQuery = IgniteClient.SqlFieldsQuery;
-const CacheConfiguration = IgniteClient.CacheConfiguration;
-const parkingCache = conn.getCache(
-  PARKING_CACHE_NAME,
-  new CacheConfiguration().setSqlSchema('EasyParking')
-);
 
 exports.getAll = async function () {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const cursor = await parkingCache.query(
     new SqlFieldsQuery('SELECT * FROM Parking')
   );
@@ -35,6 +29,7 @@ exports.getAll = async function () {
 };
 
 exports.findOne = async function (id) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(`SELECT * FROM Parking WHERE id = '${id}'`);
   const cursor = await parkingCache.query(query);
   const result = [];
@@ -58,6 +53,7 @@ exports.findOne = async function (id) {
 };
 
 exports.find = async function (username) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     `SELECT * FROM Parking WHERE username = '${username}'`
   );
@@ -81,6 +77,7 @@ exports.find = async function (username) {
 };
 
 exports.insertOne = async function (parking) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const id = uuidv4();
   console.log(id);
   const initParking = {
@@ -142,6 +139,7 @@ exports.insertOne = async function (parking) {
 };
 
 exports.getParkingAddress = async function (id) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     `SELECT p.id, p.description, p.name, p.address, c.name as city, d.name as district FROM parking p INNER JOIN city c ON p.city = c.id INNER JOIN district d ON p.district = d.id WHERE p.id = '${id}'`
   ).setDistributedJoins(true);
@@ -162,6 +160,7 @@ exports.getParkingAddress = async function (id) {
 };
 
 exports.getParkingImgs = async function (id) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     `SELECT i.url FROM park_image i WHERE i.parking = '${id}'`
   ).setDistributedJoins(true);
@@ -169,7 +168,6 @@ exports.getParkingImgs = async function (id) {
   const result = [];
   do {
     let row = await cursor.getValue();
-    console.log(row);
     if (row) result.push(row[0]);
   } while (cursor.hasMore());
 
@@ -183,6 +181,7 @@ exports.getParkingImgs = async function (id) {
 };
 
 exports.getParkingType = async function (id) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     `SELECT t.* FROM parking p INNER JOIN vehicle_type t ON p.id = t.parking WHERE p.id = '${id}'`
   ).setDistributedJoins(true);
@@ -211,6 +210,7 @@ exports.getParkingType = async function (id) {
 };
 
 exports.getFeedback = async function (id) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     `SELECT f.* FROM feedback f WHERE f.parking = '${id}'`
   ).setDistributedJoins(true);
@@ -240,6 +240,7 @@ exports.getFeedback = async function (id) {
 };
 
 exports.getParkingById = async function (id) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const address = await this.getParkingAddress(id);
   const img = await this.getParkingImgs(id);
   const type = await this.getParkingType(id);
@@ -256,6 +257,7 @@ exports.getParkingById = async function (id) {
 };
 
 exports.summaryProvince = async function () {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     'SELECT c.id, c.name, COUNT(*) FROM parking p INNER JOIN city c ON p.city = c.id GROUP BY c.name, c.id'
   ).setDistributedJoins(true);
@@ -277,6 +279,7 @@ exports.summaryProvince = async function () {
 };
 
 exports.getParkingByCity = async function (cityId) {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     `SELECT * FROM parking p INNER JOIN city c ON p.city = c.id WHERE c.id = '${cityId}'`
   ).setDistributedJoins(true);
@@ -303,6 +306,7 @@ exports.getParkingByCity = async function (cityId) {
 };
 
 exports.getPopularParking = async function () {
+  const parkingCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     'SELECT * FROM (SELECT f.parking, avg(f.rate) as rate, count(f.rate) as nFeedback FROM feedback f GROUP BY f.parking ORDER BY avg(f.rate) DESC)'
   ).setDistributedJoins(true);

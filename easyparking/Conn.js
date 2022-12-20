@@ -6,16 +6,12 @@ const igniteClient = new IgniteClient();
 async function IgniteConnection() {
   try {
     const igniteClientConfiguration = new IgniteClientConfiguration(
-      'e20ae279-d590-4d02-9357-46f7cadb7fc4.gridgain-nebula.com:10800'
-    )
-      .setUserName('bang')
-      .setPassword('7UqhZOVtLc5M0AJ')
-      .setConnectionOptions(true);
+      '127.0.0.1:10800', '127.0.0.1:10801', '127.0.0.1:10802');
 
     await igniteClient.connect(igniteClientConfiguration);
     return igniteClient;
   } catch (e) {
-    console.error;
+    console.error(e);
     return;
   }
 }

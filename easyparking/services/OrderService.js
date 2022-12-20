@@ -1,98 +1,27 @@
-const OrderModel = require('../models/OrderModels.js');
-const ParkingModel = require('../models/ParkingModel.js');
-const ParkingService = require('./ParkingService');
+const orderModel = require('../models/OrderModels');
 
-const VEHICLE_NAMES = ['Xe máy', 'Xe ô tô 4-7 chỗ', 'Xe 16 chỗ', 'Xe 32 chỗ'];
-
-async function formatOrder(order) {
-  order = order.toObject();
-
-  const parking = await ParkingModel.findOne(order.parkingId);
-  order.parking = {};
-  order.parking.name = parking.name;
-  order.parking.address = [
-    parking.street,
-    parking.ward,
-    parking.district,
-    parking.province,
-  ].join(', ');
-  order.parking.image = parking.img;
-  order.vehicles = VEHICLE_NAMES.map((item, idx) => {
-    var vehicle = {};
-    vehicle.name = item;
-    vehicle.unitPrice = order.price[idx];
-    vehicle.quantity = order.quantity[idx];
-    return vehicle;
-  });
-  console.log(order);
-  delete order.parkingId;
-  return order;
-}
 
 module.exports = {
-  getNumOfUncheckOrderBy: async (parkingId) => {
-    return await OrderModel.count({
-      parkingId: parkingId,
-      'times.0': {
-        $ne: null,
-      },
-      'times.1': {
-        $eq: null,
-      },
-    });
+  getOrder: async (id) => {
+    console.log("GET - /orders/{id}");
+    return await orderModel.getOrderDetail(id);
   },
-
-  getAllOrderBy: async function (userName) {
-    let parks = await ParkingService.getAllParkingBy(userName);
-    let orders = [];
-    for (let park of parks) {
-      let orderOfPark = await OrderModel.find(park?._id);
-      orders.push(orderOfPark);
-    }
-
-    let zip = parks.map((park, index) => [park.name, orders[index]]);
-    zip = zip.filter((item) => item[1]?.length !== 0);
-    return zip;
-  },
-
-  updStatusOrderBy: async function (id, newStatus) {
-    let doc = await OrderModel.findOneAndUpdate(
-      { _id: id },
-      { times: newStatus },
-      { new: true }
-    );
-    return doc;
-  },
-
-  createOrder: async (body) => {
-    var order = body;
-    const parking = await ParkingModel.findOne(order.parkingId);
-    if (Object.keys(parking).length !== 0) {
-      order.price = parking.price;
-      //   const orderModel = new OrderModel(order);
-      const newOrder = await OrderModel.insertOne(order);
-      return newOrder;
-    } else {
-      return null;
-    }
-  },
-
-  getOrder: async (orderId) => {
-    var order = await OrderModel.findOne(orderId);
-
-    return await formatOrder(order);
-  },
-
   getOrderHistory: async (userName) => {
-    var orders = await OrderModel.find(userName);
-    var formatedOrders = [];
-    for (let i = 0; i < orders.length; i++) {
-      try {
-        formatedOrders.push(await formatOrder(orders[i]));
-      } catch (error) {
-        console.log(error);
-      }
-    }
-    return formatedOrders;
+    console.log("GET - /orders/order-history/{userName}");
+    return await orderModel.getOrderHistory(userName);
+  },
+  getAllOrderBy: async function (userName) {
+    console.log("GET - /orders/order-management/{userName}");
+    return await orderModel.getAllOrderBy(userName);
+  },
+  updateNextState: async function (id, newStatus) {
+    console.log("PUT - /orders/change-state/{id}");
+    if (newStatus['cmd'] == 'update')
+      return await orderModel.updateNextState(id);
+    else return;
+  },
+  createOrder: async function (body) {
+    console.log("POST - /orders/add-order")
+    return await orderModel.addOrder(body);
   },
 };

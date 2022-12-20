@@ -6,12 +6,12 @@ const paymentRouter = require('./routes/PaymentRoutes');
 const cors = require('cors');
 const path = require('path');
 const app = express();
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 8081;
 
 app.use(express.json());
 app.use(cors());
 
-app.use('/order', orderRouter);
+app.use('/orders', orderRouter);
 app.use('/user', userRouter);
 app.use('/parkings', parkingRouter);
 app.use('/payment', paymentRouter);

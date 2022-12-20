@@ -1,16 +1,10 @@
 const { v4: uuidv4 } = require('uuid');
 const conn = require('../Conn');
-const USER_CACHE_NAME = 'User';
 const IgniteClient = require('apache-ignite-client');
-
 const SqlFieldsQuery = IgniteClient.SqlFieldsQuery;
-const CacheConfiguration = IgniteClient.CacheConfiguration;
-const userCache = conn.getCache(
-  USER_CACHE_NAME,
-  new CacheConfiguration().setSqlSchema('EasyParking')
-);
 
 exports.getUserByUsername = async function (userName) {
+  const userCache = await conn.getOrCreateCache('PUBLIC');
   const query = new SqlFieldsQuery(
     `SELECT * FROM User WHERE username = '${userName}'`
   );
@@ -32,6 +26,7 @@ exports.getUserByUsername = async function (userName) {
 };
 
 exports.insertOne = async function (user) {
+  const userCache = await conn.getOrCreateCache('PUBLIC');
   const id = uuidv4();
   console.log(user);
   const initUser = {

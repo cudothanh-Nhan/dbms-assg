@@ -51,10 +51,10 @@ class SqlExample {
     const igniteClient = new IgniteClient();
     try {
       const igniteClientConfiguration = new IgniteClientConfiguration(
-        'e20ae279-d590-4d02-9357-46f7cadb7fc4.gridgain-nebula.com:10800'
+        '05bfdbc6-d847-4036-8aa4-2fba0ed2b277.gridgain-nebula.com:10800'
       )
-        .setUserName('easyparking')
-        .setPassword('zNUaRx6rhUJcpEz')
+        .setUserName('ntdbng')
+        .setPassword('HNpPp5j8K1JwpJo')
         .setConnectionOptions(true);
       await igniteClient.connect(igniteClientConfiguration);
 
@@ -104,7 +104,7 @@ class SqlExample {
     ) WITH "template=partitioned, backups=1, affinity_key=order_id, CACHE_NAME=${ORDER_STATUS_CACHE_NAME}"`;
 
     const createOrderVehicleTable = `CREATE TABLE ORDER_VEHICLE (
-        ORDER_ID VARCHAR(20),
+        ORDER_ID VARCHAR(50),
         VEHICLE VARCHAR(20),
         QUANTITY INT,
         PRIMARY KEY (ORDER_ID, VEHICLE),
@@ -134,12 +134,12 @@ class SqlExample {
     ) WITH "template=partitioned, backups=1, CACHE_NAME=${PERSON_CACHE_NAME}"`;
 
     const createPOrderTable = `CREATE TABLE P_ORDER (
-        NANE VARCHAR(254),
+        NAME VARCHAR(254),
         EMAIL VARCHAR(254),
         PHONE VARCHAR(20),
         PARKING VARCHAR(20),
-        START_TIME TIMESTAMP(6),
-        END_TIME TIMESTAMP(6),
+        START_TIME TIMESTAMP,
+        END_TIME TIMESTAMP,
         CUSTOMER VARCHAR(20),
         ID VARCHAR(20),
         PRIMARY KEY (ID, customer),
