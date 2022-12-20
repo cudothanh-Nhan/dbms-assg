@@ -379,11 +379,13 @@ export function TabContent(props) {
         return res;
     }
 
-    let accept = () => {
+    let accept = async () => {
         let arr = JSON.parse(JSON.stringify(checkedOrder));
         for (let order of arr) {
             let newStt = setNewStatus(order);
-            axios.put(`/order/change-state/${order?._id}`, newStt);
+            await axios.post(`http://localhost:8081/orders/change-state/${order?._id}`,{
+                cmd: 'update'
+            });
         }
         clearCheckbox();
         getOrders();

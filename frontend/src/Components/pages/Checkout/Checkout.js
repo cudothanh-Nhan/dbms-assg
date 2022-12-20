@@ -6,15 +6,13 @@ import { useHistory, useParams } from 'react-router';
 export function Checkout() {
 
     var history = useHistory();
-    const VEHICLE_LABEL = ["Xe máy", "Xe ô tô 4-7 chỗ", "Xe 16 chỗ", "Xe 32 chỗ"];
-    const [price, setPrice] = useState([0, 0, 0, 0]);
-    const [quantity, setQuantity] = useState([0, 0, 0, 0]);
-    const [startTime, setStartTime] = useState(new Date().toLocaleString());
-    const [endTime, setEndTime] = useState(new Date().toLocaleString());
+    const [quantity, setQuantity] = useState({});
+    const [startTime, setStartTime] = useState(new Date().toLocaleDateString());
+    const [endTime, setEndTime] = useState(new Date().toLocaleDateString());
     const [customerName, setCustomerName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
-    const [parking, setParking] = useState({});
+    const [parking, setParking] = useState(null);
     const [onlinePayment, setOnlinePayment] = useState(false);
 
     const USER_NAME = localStorage.getItem("userName");
@@ -22,12 +20,11 @@ export function Checkout() {
     const {parkingId: PARKING_ID} = useParams();
 
     useEffect(() => {
-        axios.get("/parking/" + PARKING_ID)
+        axios.get(`http://localhost:8081/parkings/parking-searching?id=${PARKING_ID}`)
         .then(res => {
             console.log("okk");
             setParking(res.data);
             console.log(res.data);
-            setPrice(res.data.price);
         })
         .catch(err => {
             console.log("Get parking Fail");
@@ -39,30 +36,30 @@ export function Checkout() {
         if (endTime < startTime) {
             setEndTime(startTime);
         }
+        console.log(quantity);
+        console.log(parking)
     });
 
     function submitOrder() {
-        const TOTAL = price.map((item, idx) => item * quantity[idx])
-        .reduce((pre, cur) => pre + cur) * Math.ceil(calDuration(startTime, endTime) / FEE_INTERVAL);
-        if(TOTAL <= 0 || customerName == "" || phone == "") {
-            alert("Incorrect or missing information, cannot checkout");
-            return;
-        }
+        // const TOTAL = price.map((item, idx) => item * quantity[idx])
+        // .reduce((pre, cur) => pre + cur) * Math.ceil(calDuration(startTime, endTime) / FEE_INTERVAL);
+        // if(TOTAL <= 0 || customerName == "" || phone == "") {
+        //     alert("Incorrect or missing information, cannot checkout");
+        //     return;
+        // }
 
-        axios.post("/order/add-order", {
-            customer: {
-                name: customerName,
-                phone: phone,
-                email: email
-            },
+        axios.post("http://localhost:8081/orders/add-order", {
+
+            name: customerName,
+            phone: phone,
+            email: email,
+
             paymentMethod: (onlinePayment ? "Thanh toán online" : "Thanh toán tại chỗ"),
-            times: [new Date(), null, null, null, null],
-            startTime: startTime,
-            endTime: endTime,
-            price: price,
-            quantity: quantity,
-            parkingId: PARKING_ID,
-            userName: USER_NAME
+            startTime: startTime.replace(/T/, ' ').replace(/Z/, '').replace(/\.(.)*/, ''),
+            endTime: endTime.replace(/T/, ' ').replace(/Z/, '').replace(/\.(.)*/, ''),
+            type: quantity,
+            parking: PARKING_ID,
+            customer: USER_NAME
         })
         .then(res => {
             alert("Order Successfully");
@@ -71,20 +68,23 @@ export function Checkout() {
         .catch(err => {
             alert(err);
         });
-        if(onlinePayment) {
-            axios.post("/payment/process", {
-                amount: (TOTAL / 23000).toFixed(1),
-                description: [parking.name, customerName, phone].join(" | ")
-            })
-            .then(res => {
-                window.open(res.data, "_blank");
-            })
-            .catch(err => {{
-                alert(err);
-            }})
-        }
+        // if(onlinePayment) {
+        //     axios.post("/payment/process", {
+        //         amount: (TOTAL / 23000).toFixed(1),
+        //         description: [parking.name, customerName, phone].join(" | ")
+        //     })
+        //     .then(res => {
+        //         window.open(res.data, "_blank");
+        //     })
+        //     .catch(err => {{
+        //         alert(err);
+        //     }})
+        // }
     }
 
+    if (parking == null) {
+        return <></>
+    }
 
 
     return(
@@ -98,7 +98,7 @@ export function Checkout() {
                 </div>
                 <div class="col-10 row">
                     <span class="col-6 fs-4 ">Tên bãi: {parking.name}</span>
-                    <span class="col-6 fs-5">Địa chỉ: {[parking.street, parking.ward, parking.district, parking.province].join(", ")}</span>
+                    <span class="col-6 fs-5">Địa chỉ: {[parking.address, parking.district, parking.province].join(", ")}</span>
                     <div class="col-6">
                         <label class="form-label fw-bold">Gửi vào lúc</label>
                         <input type="datetime-local" class="form-control" value={startTime} onChange={(event) => setStartTime(event.target.value)}/>
@@ -135,23 +135,23 @@ export function Checkout() {
                         <th scope="col">Số giờ thuê</th>
                         <th scope="col">Đơn giá/12h</th>
                         <th class="col-1" scope="col">Số lượng</th>
+                        <th class="col-1" scope="col">Còn trống</th>
                         <th scope="col">Thành tiền</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {VEHICLE_LABEL.map((item, idx) => {
+                        {parking.type.map((vehicle, idx) => {
                             return(
                                 <tr>
                                 <th scope="row">{idx + 1}</th>
-                                <td>{item}</td>
+                                <td>{vehicle.name}</td>
                                 <td>{Math.ceil(calDuration(startTime, endTime))}h</td>
-                                <td>{Intl.NumberFormat().format(price[idx])}đ</td>
-                                <td><input type="number" class="form-control" value={quantity[idx]} disabled={!price[idx]} onChange={(event) => {
-                                        var newQuantity = [...quantity];
-                                        newQuantity[idx] = event.target.value < 0 ? 0 : event.target.value;
-                                        setQuantity(newQuantity);
+                                <td>{Intl.NumberFormat().format(vehicle.price)}đ</td>
+                                <td><input type="number" class="form-control" value={quantity[vehicle.name] ? quantity[vehicle.name] : 0} onChange={(event) => {
+                                        setQuantity({...quantity, [vehicle.name]: event.target.value});
                                     }}/></td>
-                                <td>{Intl.NumberFormat().format(price[idx] * quantity[idx] * Math.ceil(calDuration(startTime, endTime) / FEE_INTERVAL))}đ</td>
+                                <td>{Intl.NumberFormat().format(vehicle.available)}</td>
+                                <td>{Intl.NumberFormat().format(vehicle.price * (quantity[vehicle.name] ? quantity[vehicle.name] : 0) * Math.ceil(calDuration(startTime, endTime) / FEE_INTERVAL))}đ</td>
                                 </tr>
                             )
                         })}
@@ -159,7 +159,7 @@ export function Checkout() {
                             <td><h2>Tổng tiền</h2></td>
                             <td><h2 class="text-danger">{
                                 Intl.NumberFormat().format(
-                                price.map((item, idx) => item * quantity[idx])
+                                parking.type.map((vehicle, idx) => vehicle.price * (quantity[vehicle.name] ? quantity[vehicle.name] : 0))
                                 .reduce((pre, cur) => pre + cur) * Math.ceil(calDuration(startTime, endTime) / FEE_INTERVAL))
                             }đ</h2></td>
                         </tr>

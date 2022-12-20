@@ -8,15 +8,30 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ParkingService {
   @Autowired
   private NamedParameterJdbcTemplate jdbcTemplate;
+  public List<Map<String, Object>> getParkingBySearch(String searchText) {
+    final String sql = "SELECT * \n" +
+        "FROM parking p\n" +
+        "WHERE contains(p.name, (:regex), 0) > 1\n" +
+        "ORDER BY SCORE(0) DESC\n" +
+        "OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY";
+    MapSqlParameterSource parameters = new MapSqlParameterSource();
+    final String regex = String.join(" | ", Arrays.stream(searchText.split(" ")).map(s -> "%"+s+"%").collect(Collectors.toList()));
+    parameters.addValue("regex", searchText);
+    return jdbcTemplate.query(sql, parameters, (rs, rowNum) -> {
+      String id = rs.getString("id");
+      Map<String, Object> map = new HashMap<>();
+      map.put("_id", id);
+      map.putAll(this.getParkingAddress(id));
+      return map;
+    });
+  }
 
   public List<Map<String, Object>> getParkingByCity(String cityId) {
     MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -70,7 +85,7 @@ public class ParkingService {
         "FROM feedback f\n" +
         "GROUP BY f.parking\n" +
         "ORDER BY avg(f.rate) DESC)\n" +
-        "WHERE ROWNUM <= 4";
+        "WHERE ROWNUM <= 20";
 
     return jdbcTemplate.query(sql, (rs, rowNum) -> {
       Map<String, Object> map =new HashMap<>();
@@ -93,6 +108,7 @@ public class ParkingService {
     map.put("img", this.getParkingImgs(id));
     map.put("type", this.getParkingType(id));
     map.put("feedback", this.getFeedback(id));
+    map.put("_id", id);
     return map;
   }
 

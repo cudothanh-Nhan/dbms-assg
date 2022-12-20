@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { NavLink } from 'react-router-dom';
 import { useEffect } from "react";
 import { removeVI, DefaultOption } from 'jsrmvi';
+import axios from "axios";
 export function TopBarSearch({ auth, setAuth, Data }) {
   function uniq(a) {
     return a.sort().filter(function(item, pos, ary) {
@@ -19,24 +20,25 @@ export function TopBarSearch({ auth, setAuth, Data }) {
   const [filteredData, setFilteredData] = useState([]);
   const [filteredDataProvince, setFilteredDataProvince] = useState([]);
   const [wordEntered, setWordEntered] = useState("");
-  const handleFilter = (event) => {
+  const handleFilter = async (event) => {
     const searchWord = event.target.value;
     setWordEntered(searchWord);
-    const newFilterProvince = DataProvince.filter((value) => {
-          return ((value).toLowerCase().includes(searchWord.toLowerCase()))
-    });
-    const newFilter = Data.filter((value) => {
-      return (
-        (value.name +" " +value.ward +" " +value.district + " " +value.province).toLowerCase().includes(searchWord.toLowerCase()) ||
-        (value.name + " " + value.province).toLowerCase().includes(searchWord.toLowerCase()) ||
-        (value.name + " " + value.ward).toLowerCase().includes(searchWord.toLowerCase()) ||
-        (value.name + " " + value.district).toLowerCase().includes(searchWord.toLowerCase()) ||
-        (removeVI(value.name) +" " +removeVI(value.ward) +" " +removeVI(value.district) + " " +removeVI(value.province)).toLowerCase().includes(removeVI(searchWord.toLowerCase())) ||
-        (removeVI(value.name) + " " + removeVI(value.province)).toLowerCase().includes(removeVI(searchWord.toLowerCase())) ||
-        (removeVI(value.name) + " " + removeVI(value.ward)).toLowerCase().includes(removeVI(searchWord.toLowerCase())) ||
-        (removeVI(value.name) + " " + removeVI(value.district)).toLowerCase().includes(removeVI(searchWord.toLowerCase()))
-      );
-    });
+    // const newFilterProvince = DataProvince.filter((value) => {
+    //       return ((value).toLowerCase().includes(searchWord.toLowerCase()))
+    // });
+    const newFilter = (await axios.get(`http://localhost:8081/parkings/parking-text-search?textSearch=${searchWord}`)).data
+    // const newFilter = Data.filter((value) => {
+    //   return (
+    //     (value.name +" " +value.ward +" " +value.district + " " +value.province).toLowerCase().includes(searchWord.toLowerCase()) ||
+    //     (value.name + " " + value.province).toLowerCase().includes(searchWord.toLowerCase()) ||
+    //     (value.name + " " + value.ward).toLowerCase().includes(searchWord.toLowerCase()) ||
+    //     (value.name + " " + value.district).toLowerCase().includes(searchWord.toLowerCase()) ||
+    //     (removeVI(value.name) +" " +removeVI(value.ward) +" " +removeVI(value.district) + " " +removeVI(value.province)).toLowerCase().includes(removeVI(searchWord.toLowerCase())) ||
+    //     (removeVI(value.name) + " " + removeVI(value.province)).toLowerCase().includes(removeVI(searchWord.toLowerCase())) ||
+    //     (removeVI(value.name) + " " + removeVI(value.ward)).toLowerCase().includes(removeVI(searchWord.toLowerCase())) ||
+    //     (removeVI(value.name) + " " + removeVI(value.district)).toLowerCase().includes(removeVI(searchWord.toLowerCase()))
+    //   );
+    // });
 
     if (searchWord === "") {
       setFilteredData([]);
@@ -44,7 +46,7 @@ export function TopBarSearch({ auth, setAuth, Data }) {
      
     } else {
       setFilteredData(newFilter);
-      setFilteredDataProvince(newFilterProvince);
+      // setFilteredDataProvince(newFilterProvince);
     }
   };
   const clearInput = () => {
@@ -66,7 +68,6 @@ export function TopBarSearch({ auth, setAuth, Data }) {
         <div class="col">
           <input
             type="search"
-            placeholder={"nhap"}
             value={wordEntered}
             onChange={handleFilter}
             class="form-control rounded"
@@ -146,7 +147,7 @@ export function TopBarSearch({ auth, setAuth, Data }) {
             { filteredData.length !== 0 && (
               
               <div class="dataret">
-              {filteredData.slice(0, 4).map((value, key) => {
+              {filteredData.slice(0, 9).map((value, key) => {
                 return (
                   <NavLink to={"/Info/" + value._id} class="text-decoration-none text-secondary " onClick={clearInput}>
                    <div class="row">
@@ -154,7 +155,7 @@ export function TopBarSearch({ auth, setAuth, Data }) {
                     <p style={{fontWeight: 500}}>
                       {value.name +
                         ", " +
-                        value.ward +
+                        value.address +
                         ", " +
                         value.district +
                         ", " +

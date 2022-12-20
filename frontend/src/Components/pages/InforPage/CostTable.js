@@ -14,6 +14,8 @@ export function CostTable({param}) {
         <tr class="table-dark">
           <th scope="col">Loại xe</th>
           <th scope="col">Giá gửi /12h / VNĐ</th>
+          <th scope="col">Tổng chỗ</th>
+          <th scope="col">Còn trống</th>
         </tr>
       </thead>
       <tbody>
@@ -24,6 +26,8 @@ export function CostTable({param}) {
           <tr>
             <td>{each.name}</td>
             <td>{Intl.NumberFormat().format(each.price)}</td>
+            <td>{Intl.NumberFormat().format(each.capacity)}</td>
+            <td>{Intl.NumberFormat().format(each.available)}</td>
           </tr>
         );
       })} 

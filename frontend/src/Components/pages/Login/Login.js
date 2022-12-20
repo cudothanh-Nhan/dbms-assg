@@ -14,18 +14,20 @@ export default function Login({auth, setAuth}) {
         e.preventDefault();
         console.log(userName);
         console.log(pwd);
-        axios.post("/user/authenticate", 
-        {
-            userName: userName,
-            password: pwd
-        })
-        .then(res => {
-            localStorage.setItem("userName", userName);
-            setAuth(true);
-        })
-        .catch(err => {
-            alert(err);
-        })
+        setAuth(true);
+        localStorage.setItem("userName", userName);
+        // axios.post("/user/authenticate", 
+        // {
+        //     userName: userName,
+        //     password: pwd
+        // })
+        // .then(res => {
+        //     localStorage.setItem("userName", userName);
+        //     setAuth(true);
+        // })
+        // .catch(err => {
+        //     alert(err);
+        // })
     }
 
     

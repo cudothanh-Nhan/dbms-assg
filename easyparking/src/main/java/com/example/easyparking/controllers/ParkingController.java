@@ -43,5 +43,10 @@ public class ParkingController {
     return parkingService.getParkingById(id);
   }
 
+  @GetMapping("parking-text-search")
+  public List<Map<String, Object>> getParkingByTextSearch(@RequestParam String textSearch) {
+    return parkingService.getParkingBySearch(textSearch);
+  }
+
 
 }
